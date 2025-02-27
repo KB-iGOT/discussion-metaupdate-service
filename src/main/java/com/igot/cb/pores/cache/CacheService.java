@@ -61,4 +61,18 @@ public class CacheService {
       return null;
     }
   }
+
+  public void upsertUserToHash(String key, String field, String value) {
+    try (Jedis jedis = jedisPool.getResource()) {
+      long result = jedis.hset(key, field, value);;
+
+      if (result == 1) {
+        log.info("Field '{}' added to hash '{}'", field, key);
+      } else {
+        log.warn("Field '{}' already exists in hash '{}'", field, key);
+      }
+    } catch (Exception e) {
+      log.error("Error while upserting user to Redis Hash: {}", e.getMessage());
+    }
+  }
 }
