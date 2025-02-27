@@ -8,7 +8,6 @@ import com.igot.cb.pores.entity.CommunityEntity;
 import com.igot.cb.pores.repository.CommunityEngagementRepository;
 import com.igot.cb.pores.util.CbServerProperties;
 import com.igot.cb.pores.util.Constants;
-import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,7 +19,7 @@ import java.util.Optional;
 
 @Slf4j
 @Component
-public class communityMetaUpdateConsumer {
+public class CommunityMetaUpdateConsumer {
     private ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
