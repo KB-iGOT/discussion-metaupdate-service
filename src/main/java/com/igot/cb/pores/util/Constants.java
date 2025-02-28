@@ -74,6 +74,7 @@ public class Constants {
     public static final String ACTIVE = "active";
     public static final String CMMUNITY_USER_REDIS_PREFIX = "users_communinty_";
     public static final String USER_PREFIX = "user:" ;
+    public static final String COUNT_OF_PEOPLE_LIKED = "countOfPeopleLiked";
 
     private Constants() {
     }

@@ -131,4 +131,37 @@ public class CommunityMetaUpdateConsumer {
         cacheService.upsertUserToHash(Constants.CMMUNITY_USER_REDIS_PREFIX+communityEntity.getCommunityId(),Constants.USER_PREFIX+userId, Constants.USER_PREFIX+userId);
 
     }
+
+    @KafkaListener(groupId = "${kafka.topic.community.discusion.like.count.group}", topics = "${kafka.topic.community.discusion.like.count}")
+    public void upateLikeCount(ConsumerRecord<String, String> data) {
+        try {
+            Map<String, Object> updateLikeCount = mapper.readValue(data.value(), Map.class);
+            updateLikeCount(updateLikeCount);
+        } catch (Exception e) {
+            log.error("Failed to update the userCount" + data.value(), e);
+        }
+    }
+
+    private void updateLikeCount(Map<String, Object> updateLikeCount) {
+        log.info("Received like updation topic msg::inside updatePostCount");
+        String communityId = (String) updateLikeCount.get(Constants.COMMUNITY_ID);
+        Optional<CommunityEntity> communityEntityOptional = communityEngagementRepository.findByCommunityIdAndIsActive(
+            communityId, true);
+        if (communityEntityOptional.isPresent()) {
+            ObjectNode dataNode = (ObjectNode) communityEntityOptional.get().getData();
+            Long currentlike = 0L;
+            if (dataNode.has(Constants.COUNT_OF_PEOPLE_LIKED)) {
+                currentlike = dataNode.get(Constants.COUNT_OF_PEOPLE_LIKED).asLong();
+            }
+            dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike+1);
+            communityEntityOptional.get().setData(dataNode);
+            communityEngagementRepository.save(communityEntityOptional.get());
+            Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
+            esUtilService.updateDocument(Constants.INDEX_NAME,
+                communityEntityOptional.get().getCommunityId(), map,
+                cbServerProperties.getElasticCommunityJsonPath());
+            cacheService.putCache(communityId, communityEntityOptional.get().getData());
+            cacheService.deleteCache(Constants.CATEGORY_LIST_ALL_REDIS_KEY_PREFIX);
+        }
+    }
 }
