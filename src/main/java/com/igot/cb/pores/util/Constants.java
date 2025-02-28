@@ -21,7 +21,7 @@ public class Constants {
     public static final String FAILED = "Failed";
     public static final String ERROR_MESSAGE = "errmsg";
     public static final String INDEX_TYPE = "_doc";
-    public static final String REDIS_KEY_PREFIX = "discussion_";
+    public static final String REDIS_KEY_PREFIX = "community_";
     public static final String KEYWORD = ".keyword";
     public static final String ASC = "asc";
     public static final String ID = "id";
@@ -61,6 +61,20 @@ public class Constants {
     public static final String DECREMENT = "decrement";
     public static final String INDEX_NAME = "community_entity";
     public static final String CATEGORY_LIST_ALL_REDIS_KEY_PREFIX = "community_category_sub_cat_list";
+    public static final String TYPE = "type";
+    public static final String ANSWER_POST = "answerPost";
+    public static final String POST = "post";
+    public static final String COUNT_OF_ANSWER_POST_CREATED = "countOfAnswerPost";
+    public static final String COMMUNITY = "community";
+    public static final String USER_ID = "userId";
+    public static String CommunityId = "communityId";
+    public static final String USER_COMMUNITY_LOOK_UP_TABLE = "community_user_lookup";
+    public static final String UPDATED_ON = "updatedOn";
+    public static final String UPDATED_BY = "updatedByUserId";
+    public static final String ACTIVE = "active";
+    public static final String CMMUNITY_USER_REDIS_PREFIX = "users_communinty_";
+    public static final String USER_PREFIX = "user:" ;
+    public static final String COUNT_OF_PEOPLE_LIKED = "countOfPeopleLiked";
 
     private Constants() {
     }
