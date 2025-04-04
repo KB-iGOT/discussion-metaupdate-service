@@ -65,27 +65,30 @@ public class CommunityMetaUpdateConsumer {
     }
 
     private void updatePostCount(Map<String, Object> updatePostAndAnswerPostCount) {
-        log.info("Received post updation topic msg::inside updatePostCount");
-        String communityId = (String) updatePostAndAnswerPostCount.get(Constants.COMMUNITY_ID);
-        Optional<CommunityEntity> communityEntityOptional = communityEngagementRepository.findByCommunityIdAndIsActive(
-            communityId, true);
-        if (communityEntityOptional.isPresent()) {
-            ObjectNode dataNode = (ObjectNode) communityEntityOptional.get().getData();
-            if (Constants.POST.equalsIgnoreCase(
-                (String) updatePostAndAnswerPostCount.get(Constants.TYPE))) {
-                updateCount(dataNode, updatePostAndAnswerPostCount, Constants.COUNT_OF_POST_CREATED);
-            } else if (Constants.ANSWER_POST.equalsIgnoreCase(
-                (String) updatePostAndAnswerPostCount.get(Constants.TYPE))) {
-                updateCount(dataNode, updatePostAndAnswerPostCount, Constants.COUNT_OF_ANSWER_POST_CREATED);
+        try {
+            log.info("Received post updation topic msg::inside updatePostCount");
+            String communityId = (String) updatePostAndAnswerPostCount.get(Constants.COMMUNITY_ID);
+            Optional<CommunityEntity> communityEntityOptional = communityEngagementRepository.findByCommunityIdAndIsActive(
+                communityId, true);
+            if (communityEntityOptional.isPresent()) {
+                ObjectNode dataNode = (ObjectNode) communityEntityOptional.get().getData();
+                if (Constants.POST.equalsIgnoreCase(
+                    (String) updatePostAndAnswerPostCount.get(Constants.TYPE))) {
+                    updateCount(dataNode, updatePostAndAnswerPostCount, Constants.COUNT_OF_POST_CREATED);
+                } else if (Constants.ANSWER_POST.equalsIgnoreCase(
+                    (String) updatePostAndAnswerPostCount.get(Constants.TYPE))) {
+                    updateCount(dataNode, updatePostAndAnswerPostCount, Constants.COUNT_OF_ANSWER_POST_CREATED);
+                }
+                communityEntityOptional.get().setData(dataNode);
+                communityEngagementRepository.save(communityEntityOptional.get());
+                Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
+                esUtilService.updateDocument(Constants.INDEX_NAME,
+                    communityEntityOptional.get().getCommunityId(), map,
+                    cbServerProperties.getElasticCommunityJsonPath());
+                cacheService.putCache(communityId, communityEntityOptional.get().getData());
             }
-            communityEntityOptional.get().setData(dataNode);
-            communityEngagementRepository.save(communityEntityOptional.get());
-            Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-            esUtilService.updateDocument(Constants.INDEX_NAME,
-                communityEntityOptional.get().getCommunityId(), map,
-                cbServerProperties.getElasticCommunityJsonPath());
-            cacheService.putCache(communityId, communityEntityOptional.get().getData());
-            cacheService.deleteCache(Constants.CATEGORY_LIST_ALL_REDIS_KEY_PREFIX);
+        } catch (Exception e) {
+            log.error("Failed to update the post count for community: " + updatePostAndAnswerPostCount, e);
         }
     }
 
@@ -103,33 +106,36 @@ public class CommunityMetaUpdateConsumer {
     }
 
     public void updateJoinedUserCount(Map<String, Object> updateUserCount) {
-        Map<String, Object> propertyMap = new HashMap<>();
-        CommunityEntity communityEntity = objectMapper.convertValue(updateUserCount.get(Constants.COMMUNITY), CommunityEntity.class);
-        String userId = (String) updateUserCount.get(Constants.USER_ID);
-        propertyMap.put(Constants.USER_ID, userId);
-        propertyMap.put(Constants.CommunityId, communityEntity.getCommunityId());
-        propertyMap.put(Constants.STATUS, true);
-        cassandraOperation.insertRecord(Constants.KEYSPACE_SUNBIRD, Constants.USER_COMMUNITY_LOOK_UP_TABLE, propertyMap);
-        ObjectNode dataNode = (ObjectNode) communityEntity.getData();
+        try {
+            log.info("Received user count updation topic msg::inside updateJoinedUserCount");
+            Map<String, Object> propertyMap = new HashMap<>();
+            CommunityEntity communityEntity = objectMapper.convertValue(updateUserCount.get(Constants.COMMUNITY), CommunityEntity.class);
+            String userId = (String) updateUserCount.get(Constants.USER_ID);
+            propertyMap.put(Constants.USER_ID, userId);
+            propertyMap.put(Constants.CommunityId, communityEntity.getCommunityId());
+            propertyMap.put(Constants.STATUS, true);
+            cassandraOperation.insertRecord(Constants.KEYSPACE_SUNBIRD, Constants.USER_COMMUNITY_LOOK_UP_TABLE, propertyMap);
+            ObjectNode dataNode = (ObjectNode) communityEntity.getData();
 
-// Perform the update
-        long currentCount = dataNode.get(Constants.COUNT_OF_PEOPLE_JOINED).asLong();
-        dataNode.put(Constants.COUNT_OF_PEOPLE_JOINED, currentCount + 1);
-        Timestamp currentTime = new Timestamp(System.currentTimeMillis());
-        communityEntity.setUpdatedOn(currentTime);
-        dataNode.put(Constants.UPDATED_ON, String.valueOf(currentTime));
-        dataNode.put(Constants.UPDATED_BY, userId);
-        dataNode.put(Constants.STATUS, Constants.ACTIVE);
-        dataNode.put(Constants.COMMUNITY_ID, communityEntity.getCommunityId());
-        communityEngagementRepository.save(communityEntity);
-        Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-        esUtilService.updateDocument(Constants.INDEX_NAME,
-            communityEntity.getCommunityId(), map,
-            cbServerProperties.getElasticCommunityJsonPath());
-        cacheService.putCache(communityEntity.getCommunityId(), communityEntity.getData());
-        cacheService.deleteCache(Constants.CATEGORY_LIST_ALL_REDIS_KEY_PREFIX);
-        cacheService.upsertUserToHash(Constants.CMMUNITY_USER_REDIS_PREFIX+communityEntity.getCommunityId(),Constants.USER_PREFIX+userId, Constants.USER_PREFIX+userId);
-
+            // Perform the update
+            long currentCount = dataNode.get(Constants.COUNT_OF_PEOPLE_JOINED).asLong();
+            dataNode.put(Constants.COUNT_OF_PEOPLE_JOINED, currentCount + 1);
+            Timestamp currentTime = new Timestamp(System.currentTimeMillis());
+            communityEntity.setUpdatedOn(currentTime);
+            dataNode.put(Constants.UPDATED_ON, String.valueOf(currentTime));
+            dataNode.put(Constants.UPDATED_BY, userId);
+            dataNode.put(Constants.STATUS, Constants.ACTIVE);
+            dataNode.put(Constants.COMMUNITY_ID, communityEntity.getCommunityId());
+            communityEngagementRepository.save(communityEntity);
+            Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
+            esUtilService.updateDocument(Constants.INDEX_NAME,
+                communityEntity.getCommunityId(), map,
+                cbServerProperties.getElasticCommunityJsonPath());
+            cacheService.putCache(communityEntity.getCommunityId(), communityEntity.getData());
+            cacheService.upsertUserToHash(Constants.CMMUNITY_USER_REDIS_PREFIX + communityEntity.getCommunityId(), Constants.USER_PREFIX + userId, Constants.USER_PREFIX + userId);
+        } catch (Exception e) {
+            log.error("Failed to update the joined user count: " + updateUserCount, e.getMessage(), e);
+        }
     }
 
     @KafkaListener(groupId = "${kafka.topic.community.discusion.like.count.group}", topics = "${kafka.topic.community.discusion.like.count}")
@@ -143,25 +149,28 @@ public class CommunityMetaUpdateConsumer {
     }
 
     private void updateLikeCount(Map<String, Object> updateLikeCount) {
-        log.info("Received like updation topic msg::inside updatePostCount");
-        String communityId = (String) updateLikeCount.get(Constants.COMMUNITY_ID);
-        Optional<CommunityEntity> communityEntityOptional = communityEngagementRepository.findByCommunityIdAndIsActive(
-            communityId, true);
-        if (communityEntityOptional.isPresent()) {
-            ObjectNode dataNode = (ObjectNode) communityEntityOptional.get().getData();
-            Long currentlike = 0L;
-            if (dataNode.has(Constants.COUNT_OF_PEOPLE_LIKED)) {
-                currentlike = dataNode.get(Constants.COUNT_OF_PEOPLE_LIKED).asLong();
+        try {
+            log.info("Received like updation topic msg::inside updatePostCount");
+            String communityId = (String) updateLikeCount.get(Constants.COMMUNITY_ID);
+            Optional<CommunityEntity> communityEntityOptional = communityEngagementRepository.findByCommunityIdAndIsActive(
+                communityId, true);
+            if (communityEntityOptional.isPresent()) {
+                ObjectNode dataNode = (ObjectNode) communityEntityOptional.get().getData();
+                Long currentlike = 0L;
+                if (dataNode.has(Constants.COUNT_OF_PEOPLE_LIKED)) {
+                    currentlike = dataNode.get(Constants.COUNT_OF_PEOPLE_LIKED).asLong();
+                }
+                dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike + 1);
+                communityEntityOptional.get().setData(dataNode);
+                communityEngagementRepository.save(communityEntityOptional.get());
+                Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
+                esUtilService.updateDocument(Constants.INDEX_NAME,
+                    communityEntityOptional.get().getCommunityId(), map,
+                    cbServerProperties.getElasticCommunityJsonPath());
+                cacheService.putCache(communityId, communityEntityOptional.get().getData());
             }
-            dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike+1);
-            communityEntityOptional.get().setData(dataNode);
-            communityEngagementRepository.save(communityEntityOptional.get());
-            Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-            esUtilService.updateDocument(Constants.INDEX_NAME,
-                communityEntityOptional.get().getCommunityId(), map,
-                cbServerProperties.getElasticCommunityJsonPath());
-            cacheService.putCache(communityId, communityEntityOptional.get().getData());
-            cacheService.deleteCache(Constants.CATEGORY_LIST_ALL_REDIS_KEY_PREFIX);
+        } catch (Exception e) {
+            log.error("Failed to update the like count for community: "+ updateLikeCount, e.getMessage(), e);
         }
     }
 }
