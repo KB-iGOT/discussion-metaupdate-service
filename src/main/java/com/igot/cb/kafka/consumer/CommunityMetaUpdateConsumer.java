@@ -138,7 +138,7 @@ public class CommunityMetaUpdateConsumer {
             cacheService.putCache(communityEntity.getCommunityId(), communityEntity.getData());
             cacheService.upsertUserToHash(Constants.CMMUNITY_USER_REDIS_PREFIX + communityEntity.getCommunityId(), Constants.USER_PREFIX + userId, Constants.USER_PREFIX + userId);
         } catch (Exception e) {
-            log.error("Failed to update the joined user count: " + updateUserCount, e.getMessage(), e);
+            log.error("Failed to update the joined user count: ", updateUserCount, e);
         }
     }
 
@@ -174,7 +174,7 @@ public class CommunityMetaUpdateConsumer {
                 cacheService.putCache(communityId, communityEntityOptional.get().getData());
             }
         } catch (Exception e) {
-            log.error("Failed to update the like count for community: "+ updateLikeCount, e.getMessage(), e);
+            log.error("Failed to update the like count for community: ", updateLikeCount, e);
         }
     }
 }
