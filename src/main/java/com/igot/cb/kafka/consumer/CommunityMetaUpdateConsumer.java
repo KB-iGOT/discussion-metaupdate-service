@@ -14,6 +14,7 @@ import java.util.HashMap;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Component;
 
@@ -42,6 +43,9 @@ public class CommunityMetaUpdateConsumer {
 
     @Autowired
     CassandraOperation cassandraOperation;
+
+    @Value("${community.index}")
+    private String communityIndex;
 
     @KafkaListener(groupId = "${kafka.topic.community.user.count.group}", topics = "${kafka.topic.community.user.count}")
     public void upateUserCount(ConsumerRecord<String, String> data) {
@@ -82,7 +86,7 @@ public class CommunityMetaUpdateConsumer {
                 communityEntityOptional.get().setData(dataNode);
                 communityEngagementRepository.save(communityEntityOptional.get());
                 Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-                esUtilService.updateDocument(Constants.INDEX_NAME,
+                esUtilService.updateDocument(communityIndex,
                     communityEntityOptional.get().getCommunityId(), map,
                     cbServerProperties.getElasticCommunityJsonPath());
                 cacheService.putCache(communityId, communityEntityOptional.get().getData());
@@ -128,7 +132,7 @@ public class CommunityMetaUpdateConsumer {
             dataNode.put(Constants.COMMUNITY_ID, communityEntity.getCommunityId());
             communityEngagementRepository.save(communityEntity);
             Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-            esUtilService.updateDocument(Constants.INDEX_NAME,
+            esUtilService.updateDocument(communityIndex,
                 communityEntity.getCommunityId(), map,
                 cbServerProperties.getElasticCommunityJsonPath());
             cacheService.putCache(communityEntity.getCommunityId(), communityEntity.getData());
@@ -164,7 +168,7 @@ public class CommunityMetaUpdateConsumer {
                 communityEntityOptional.get().setData(dataNode);
                 communityEngagementRepository.save(communityEntityOptional.get());
                 Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
-                esUtilService.updateDocument(Constants.INDEX_NAME,
+                esUtilService.updateDocument(communityIndex,
                     communityEntityOptional.get().getCommunityId(), map,
                     cbServerProperties.getElasticCommunityJsonPath());
                 cacheService.putCache(communityId, communityEntityOptional.get().getData());
