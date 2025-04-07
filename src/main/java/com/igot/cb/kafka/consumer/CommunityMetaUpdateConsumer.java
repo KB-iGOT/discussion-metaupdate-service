@@ -126,8 +126,6 @@ public class CommunityMetaUpdateConsumer {
             dataNode.put(Constants.COUNT_OF_PEOPLE_JOINED, currentCount + 1);
             Timestamp currentTime = new Timestamp(System.currentTimeMillis());
             communityEntity.setUpdatedOn(currentTime);
-            dataNode.put(Constants.UPDATED_ON, String.valueOf(currentTime));
-            dataNode.put(Constants.UPDATED_BY, userId);
             dataNode.put(Constants.STATUS, Constants.ACTIVE);
             dataNode.put(Constants.COMMUNITY_ID, communityEntity.getCommunityId());
             communityEntity.setData(dataNode);
