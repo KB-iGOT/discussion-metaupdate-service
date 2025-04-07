@@ -130,6 +130,7 @@ public class CommunityMetaUpdateConsumer {
             dataNode.put(Constants.UPDATED_BY, userId);
             dataNode.put(Constants.STATUS, Constants.ACTIVE);
             dataNode.put(Constants.COMMUNITY_ID, communityEntity.getCommunityId());
+            communityEntity.setData(dataNode);
             communityEngagementRepository.save(communityEntity);
             Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
             esUtilService.updateDocument(communityIndex,
