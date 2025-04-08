@@ -60,10 +60,10 @@
       "epoch_millis"
     ]
   },
-  "createdByUserId": {
+  "createdBy": {
     "type": "keyword"
   },
-  "updatedByUserId": {
+  "updatedBy": {
     "type": "keyword"
   },
   "communityGuideLines": {
@@ -91,6 +91,22 @@
     "type": "long"
   },
   "reportedBy": {
+    "type": "keyword"
+  },
+  "orgName": {
+    "type": "keyword"
+  },
+  "publishedOn": {
+    "type": "date",
+    "format": [
+      "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+      "epoch_millis"
+    ]
+  },
+  "countOfModerators": {
+    "type": "long"
+  },
+  "publishedBy": {
     "type": "keyword"
   }
 }
