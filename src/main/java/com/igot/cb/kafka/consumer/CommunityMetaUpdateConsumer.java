@@ -164,7 +164,11 @@ public class CommunityMetaUpdateConsumer {
                 if (dataNode.has(Constants.COUNT_OF_PEOPLE_LIKED)) {
                     currentlike = dataNode.get(Constants.COUNT_OF_PEOPLE_LIKED).asLong();
                 }
-                dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike + 1);
+                if (updateLikeCount.get(Constants.STATUS).equals(Constants.INCREMENT)) {
+                    dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike + 1);
+                } else if (updateLikeCount.get(Constants.STATUS).equals(Constants.DECREMENT)) {
+                    dataNode.put(Constants.COUNT_OF_PEOPLE_LIKED, currentlike - 1);
+                }
                 communityEntityOptional.get().setData(dataNode);
                 communityEngagementRepository.save(communityEntityOptional.get());
                 Map<String, Object> map = objectMapper.convertValue(dataNode, Map.class);
