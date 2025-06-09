@@ -2,6 +2,8 @@ package com.igot.cb.kafka.consumer;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.igot.cb.managepostcount.service.ManagePostCountService;
+import com.igot.cb.managepostcount.service.impl.ManagePostCountServiceImpl;
 import com.igot.cb.pores.cache.CacheService;
 import com.igot.cb.pores.elasticsearch.service.EsUtilService;
 import com.igot.cb.pores.entity.CommunityEntity;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 @Slf4j
 @Component
@@ -47,11 +50,16 @@ public class CommunityMetaUpdateConsumer {
     @Value("${community.index}")
     private String communityIndex;
 
+    @Autowired
+    private ManagePostCountServiceImpl managePostCountServiceImpl;
+
     @KafkaListener(groupId = "${kafka.topic.community.user.count.group}", topics = "${kafka.topic.community.user.count}")
     public void upateUserCount(ConsumerRecord<String, String> data) {
         try {
             Map<String, Object> updateUserCount = mapper.readValue(data.value(), Map.class);
-            updateJoinedUserCount(updateUserCount);
+            CompletableFuture.runAsync(() -> {
+                updateJoinedUserCount(updateUserCount);
+            });
         } catch (Exception e) {
             log.error("Failed to update the userCount" + data.value(), e);
         }
@@ -62,7 +70,9 @@ public class CommunityMetaUpdateConsumer {
         log.info("Received post updation topic msg");
         try {
             Map<String, Object> updateUserCount = mapper.readValue(data.value(), Map.class);
-            updatePostCount(updateUserCount);
+            CompletableFuture.runAsync(() -> {
+                updatePostCount(updateUserCount);
+            });
         } catch (Exception e) {
             log.error("Failed to update the userCount" + data.value(), e);
         }
@@ -146,7 +156,9 @@ public class CommunityMetaUpdateConsumer {
     public void upateLikeCount(ConsumerRecord<String, String> data) {
         try {
             Map<String, Object> updateLikeCount = mapper.readValue(data.value(), Map.class);
-            updateLikeCount(updateLikeCount);
+            CompletableFuture.runAsync(() -> {
+                updateLikeCount(updateLikeCount);
+            });
         } catch (Exception e) {
             log.error("Failed to update the userCount" + data.value(), e);
         }
@@ -181,4 +193,46 @@ public class CommunityMetaUpdateConsumer {
             log.error("Failed to update the like count for community: "+updateLikeCount, e);
         }
     }
+
+    @KafkaListener(groupId = "${kafka.topic.user.post.count.group}", topics = "${kafka.topic.user.post.count}")
+    public void updateUserPostCount(ConsumerRecord<String, String> data) {
+        try {
+            Map<String, String> updateLikeCount = mapper.readValue(data.value(), Map.class);
+            CompletableFuture.runAsync(() -> {
+                updateUserPostCount(updateLikeCount);
+            });
+        } catch (Exception e) {
+            log.error("Failed to update the userCount" + data.value(), e);
+        }
+    }
+
+    private void updateUserPostCount(Map<String, String> updatePostAndAnswerPostCount) {
+        try {
+            log.info("Received post updation topic msg::inside updateUserPostCount");
+            String userId = updatePostAndAnswerPostCount.get(Constants.USERID);
+            String status = updatePostAndAnswerPostCount.get(Constants.STATUS);
+            String postCountData = cacheService.getCacheWithoutPrefix("user:postCount_" + userId);
+            if (postCountData != null) {
+                long currentCount = Long.parseLong(postCountData);
+                if (Constants.INCREMENT.equalsIgnoreCase(status)) {
+                    currentCount += 1;
+                } else if (Constants.DECREMENT.equalsIgnoreCase(status)) {
+                    currentCount -= 1;
+                }
+                cacheService.putCacheWithoutPrefix("user:postCount_" + userId, currentCount);
+            } else {
+                log.info("Post count not found in cache for user: {}. Fetching from Elasticsearch...", userId);
+                try {
+                    // Use the service method instead of duplicating code
+                    long currentCount = managePostCountServiceImpl.fetchPostCountFromElasticsearch(userId);
+                    cacheService.putCacheWithoutPrefix("user:postCount_" + userId, currentCount);
+                } catch (Exception e) {
+                    log.error("Failed to fetch post count from Elasticsearch for user: {}", userId, e);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to update the post count for user: {}", updatePostAndAnswerPostCount, e);
+        }
+    }
+
 }
