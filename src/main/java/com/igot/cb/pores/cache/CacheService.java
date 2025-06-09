@@ -75,4 +75,24 @@ public class CacheService {
       log.error("Error while upserting user to Redis Hash: {}", e.getMessage());
     }
   }
+
+  public String getCacheWithoutPrefix(String key) {
+    try {
+      return getJedis().get(key);
+    } catch (Exception e) {
+      return null;
+    }
+  }
+
+  public void putCacheWithoutPrefix(String key, Object object) {
+    try {
+      String data = objectMapper.writeValueAsString(object);
+      try (Jedis jedis = jedisPool.getResource()) {
+        jedis.set(key, data);
+        jedis.expire(Constants.REDIS_KEY_PREFIX + key, cacheTtl);
+      }
+    } catch (Exception e) {
+      log.error("Error while putting data in Redis cache: {}, {} ", key, e.getMessage());
+    }
+  }
 }
