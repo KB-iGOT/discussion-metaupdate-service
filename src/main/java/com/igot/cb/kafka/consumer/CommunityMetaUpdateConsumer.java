@@ -51,7 +51,7 @@ public class CommunityMetaUpdateConsumer {
     private String communityIndex;
 
     @Autowired
-    private ManagePostCountService managePostCountService;
+    private ManagePostCountServiceImpl managePostCountServiceImpl;
 
     @KafkaListener(groupId = "${kafka.topic.community.user.count.group}", topics = "${kafka.topic.community.user.count}")
     public void upateUserCount(ConsumerRecord<String, String> data) {
@@ -194,7 +194,7 @@ public class CommunityMetaUpdateConsumer {
         }
     }
 
-    @KafkaListener(groupId = "${kafka.topic.community.discusion.post.count.group}", topics = "${kafka.topic.user.post.count}")
+    @KafkaListener(groupId = "${kafka.topic.user.post.count.group}", topics = "${kafka.topic.user.post.count}")
     public void updateUserPostCount(ConsumerRecord<String, String> data) {
         try {
             Map<String, String> updateLikeCount = mapper.readValue(data.value(), Map.class);
@@ -224,7 +224,7 @@ public class CommunityMetaUpdateConsumer {
                 log.info("Post count not found in cache for user: {}. Fetching from Elasticsearch...", userId);
                 try {
                     // Use the service method instead of duplicating code
-                    long currentCount = ((ManagePostCountServiceImpl) managePostCountService).fetchPostCountFromElasticsearch(userId);
+                    long currentCount = managePostCountServiceImpl.fetchPostCountFromElasticsearch(userId);
                     cacheService.putCacheWithoutPrefix("user:postCount_" + userId, currentCount);
                 } catch (Exception e) {
                     log.error("Failed to fetch post count from Elasticsearch for user: {}", userId, e);
