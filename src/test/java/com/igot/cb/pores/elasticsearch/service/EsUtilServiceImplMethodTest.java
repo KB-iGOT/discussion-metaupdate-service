@@ -68,7 +68,7 @@ class EsUtilServiceImplMethodTest {
 
         // Mock hit
         Hit<Object> hit1 = new Hit.Builder<>().id("doc1").index("index").source(Map.of("field", "value")).build();
-        List<Hit<Object>> hitList = Arrays.asList(hit1);
+        List<Hit<Object>> hitList = Collections.singletonList(hit1);
 
         // Mock total hits
         TotalHits totalHits = new TotalHits.Builder().value(1L).relation(TotalHitsRelation.Eq).build();
@@ -103,7 +103,7 @@ class EsUtilServiceImplMethodTest {
 
         Method method = EsUtilServiceImpl.class.getDeclaredMethod("addRequestedFieldsToSearchSourceBuilder", SearchCriteria.class, SearchRequest.Builder.class);
         method.setAccessible(true);
-        method.invoke(esUtilService, searchCriteria, builder);
+        assertDoesNotThrow(()-> method.invoke(esUtilService, searchCriteria, builder));
     }
 
     @Test
@@ -113,7 +113,7 @@ class EsUtilServiceImplMethodTest {
 
         Method method = EsUtilServiceImpl.class.getDeclaredMethod("addFacetsToSearchSourceBuilder", List.class, SearchRequest.Builder.class);
         method.setAccessible(true);
-        method.invoke(esUtilService, facets, builder);
+        assertDoesNotThrow(()-> method.invoke(esUtilService, facets, builder));
     }
 
     @Test
@@ -251,7 +251,7 @@ class EsUtilServiceImplMethodTest {
         });
 
         Throwable cause = exception.getCause();
-        assertTrue(cause instanceof IllegalArgumentException);
+        assertInstanceOf(IllegalArgumentException.class, cause);
     }
 
     @Test

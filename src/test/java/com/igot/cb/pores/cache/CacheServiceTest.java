@@ -37,13 +37,13 @@ class CacheServiceTest {
 
         cacheService.putCache("key", new Object());
 
-        verify(jedis).set(eq(Constants.REDIS_KEY_PREFIX + "key"), eq("data"));
+        verify(jedis).set(Constants.REDIS_KEY_PREFIX + "key", "data");
     }
 
     @Test
     void testPutCache_Exception() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("fail"));
-        cacheService.putCache("key", new Object());
+        assertDoesNotThrow(()-> cacheService.putCache("key", new Object()));
         // should log error and not throw
     }
 
@@ -114,7 +114,7 @@ class CacheServiceTest {
     @Test
     void testUpsertUserToHash_Exception() {
         when(jedisPool.getResource()).thenThrow(new RuntimeException("fail"));
-        cacheService.upsertUserToHash("key", "field", "value");
+        assertDoesNotThrow(()-> cacheService.upsertUserToHash("key", "field", "value"));
     }
 
     @Test
@@ -124,13 +124,13 @@ class CacheServiceTest {
 
         cacheService.putCacheWithoutPrefix("key", new Object());
 
-        verify(jedis).set(eq("key"), eq("data"));
+        verify(jedis).set("key", "data");
     }
 
     @Test
     void testPutCacheWithoutPrefix_Exception() throws Exception {
         when(objectMapper.writeValueAsString(any())).thenThrow(new RuntimeException("fail"));
-        cacheService.putCacheWithoutPrefix("key", new Object());
+        assertDoesNotThrow(()-> cacheService.putCacheWithoutPrefix("key", new Object()));
     }
 
     @Test
