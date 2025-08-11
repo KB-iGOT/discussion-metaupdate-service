@@ -85,7 +85,7 @@ class ManagePostCountServiceImplTest {
         // Verify interactions
         verify(objectMapper).readValue(criteriaJson, SearchCriteria.class);
         verify(esUtilService).searchDocuments(eq("discussion_entity"), any(SearchCriteria.class));
-        verify(cacheService).putCacheWithoutPrefix(eq("user:postCount_" + userId), eq(5L));
+        verify(cacheService).putCacheWithoutPrefix("user:postCount_" + userId, 5L);
 
         // Verify that `createdBy` was set properly in criteria
         assertEquals(userId, mockCriteria.getFilterCriteriaMap().get("createdBy"));

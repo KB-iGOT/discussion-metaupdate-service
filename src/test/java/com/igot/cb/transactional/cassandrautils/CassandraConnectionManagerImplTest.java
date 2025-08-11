@@ -59,7 +59,7 @@ class CassandraConnectionManagerImplTest {
     @Test
     void testShutdownHook() {
         Thread thread = new CassandraConnectionManagerImpl.ResourceCleanUp();
-        thread.start();
+        assertDoesNotThrow(thread::start);
     }
 
     private ConsistencyLevel invokeGetConsistencyLevel() {
