@@ -24,4 +24,7 @@ public class CbServerProperties {
 
       @Value("${kafka.topic.user.post.count}")
       private String kafkaUserPostCountTopic;
+
+      @Value("${redis.community.user.data.ttl}")
+      private long redisCommunityUserDataTtl;
 }
