@@ -105,7 +105,7 @@ class CacheServiceTest {
     void testUpsertUserToHash_NewField() {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(jedis.hset("key", "field", "value")).thenReturn(1L);
-        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
+        when(properties.getRedisCommunityUserDataTtlSeconds()).thenReturn(3600L);
 
         cacheService.upsertUserToHash("key", "field", "value");
         verify(jedis).hset("key", "field", "value");
@@ -115,7 +115,7 @@ class CacheServiceTest {
     void testUpsertUserToHash_ExistingField() {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(jedis.hset("key", "field", "value")).thenReturn(0L);
-        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
+        when(properties.getRedisCommunityUserDataTtlSeconds()).thenReturn(3600L);
 
         cacheService.upsertUserToHash("key", "field", "value");
         verify(jedis).hset("key", "field", "value");
@@ -131,7 +131,7 @@ class CacheServiceTest {
     void testPutCacheWithoutPrefix() throws Exception {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(objectMapper.writeValueAsString(any())).thenReturn("data");
-        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
+        when(properties.getRedisCommunityUserDataTtlSeconds()).thenReturn(3600L);
 
         cacheService.putCacheWithoutPrefix("key", new Object());
 
