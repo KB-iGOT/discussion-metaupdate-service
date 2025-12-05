@@ -69,7 +69,7 @@ public class CacheService {
   public void upsertUserToHash(String key, String field, String value) {
     try (Jedis jedis = jedisPool.getResource()) {
       long result = jedis.hset(key, field, value);
-        jedis.expire(key, properties.getRedisCommunityUserDataTtl());
+      jedis.expire(key, properties.getRedisCommunityUserDataTtl());
 
       if (result == 1) {
         log.info("Field '{}' added to hash '{}'", field, key);
