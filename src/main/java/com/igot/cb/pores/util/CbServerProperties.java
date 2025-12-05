@@ -26,5 +26,5 @@ public class CbServerProperties {
       private String kafkaUserPostCountTopic;
 
       @Value("${redis.community.user.data.ttl.seconds}")
-      private long redisCommunityUserDataTtl;
+      private long redisCommunityUserDataTtlSeconds;
 }

@@ -22,8 +22,11 @@ public class CacheService {
   @Value("${spring.redis.cacheTtl}")
   private long cacheTtl;
 
-  @Autowired
-  private CbServerProperties properties;
+  private final CbServerProperties properties;
+
+  public CacheService(CbServerProperties properties) {
+      this.properties = properties;
+  }
 
   public Jedis getJedis() {
     try (Jedis jedis = jedisPool.getResource()) {
@@ -69,7 +72,7 @@ public class CacheService {
   public void upsertUserToHash(String key, String field, String value) {
     try (Jedis jedis = jedisPool.getResource()) {
       long result = jedis.hset(key, field, value);
-      jedis.expire(key, properties.getRedisCommunityUserDataTtl());
+      jedis.expire(key, properties.getRedisCommunityUserDataTtlSeconds());
 
       if (result == 1) {
         log.info("Field '{}' added to hash '{}'", field, key);
@@ -94,7 +97,7 @@ public class CacheService {
       String data = objectMapper.writeValueAsString(object);
       try (Jedis jedis = jedisPool.getResource()) {
         jedis.set(key, data);
-        jedis.expire(key, properties.getRedisCommunityUserDataTtl());
+        jedis.expire(key, properties.getRedisCommunityUserDataTtlSeconds());
       }
     } catch (Exception e) {
       log.error("Error while putting data in Redis cache: {}, {} ", key, e.getMessage());

@@ -1,10 +1,12 @@
 package com.igot.cb.pores.cache;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.igot.cb.pores.util.CbServerProperties;
 import com.igot.cb.pores.util.Constants;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.test.util.ReflectionTestUtils;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
@@ -13,7 +15,6 @@ import static org.mockito.Mockito.*;
 
 class CacheServiceTest {
 
-    @InjectMocks
     private CacheService cacheService;
 
     @Mock
@@ -25,9 +26,16 @@ class CacheServiceTest {
     @Mock
     private ObjectMapper objectMapper;
 
+    @Mock
+    private CbServerProperties properties;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
+        cacheService = new CacheService(properties);
+        ReflectionTestUtils.setField(cacheService, "jedisPool", jedisPool);
+        ReflectionTestUtils.setField(cacheService, "objectMapper", objectMapper);
+        ReflectionTestUtils.setField(cacheService, "cacheTtl", 3600L);
     }
 
     @Test
@@ -97,6 +105,7 @@ class CacheServiceTest {
     void testUpsertUserToHash_NewField() {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(jedis.hset("key", "field", "value")).thenReturn(1L);
+        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
 
         cacheService.upsertUserToHash("key", "field", "value");
         verify(jedis).hset("key", "field", "value");
@@ -106,6 +115,7 @@ class CacheServiceTest {
     void testUpsertUserToHash_ExistingField() {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(jedis.hset("key", "field", "value")).thenReturn(0L);
+        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
 
         cacheService.upsertUserToHash("key", "field", "value");
         verify(jedis).hset("key", "field", "value");
@@ -121,6 +131,7 @@ class CacheServiceTest {
     void testPutCacheWithoutPrefix() throws Exception {
         when(jedisPool.getResource()).thenReturn(jedis);
         when(objectMapper.writeValueAsString(any())).thenReturn("data");
+        when(properties.getRedisCommunityUserDataTtl()).thenReturn(3600L);
 
         cacheService.putCacheWithoutPrefix("key", new Object());
 
