@@ -78,6 +78,20 @@ public class Constants {
     public static final String API_VERSION_1 = "1.0";
     public static final String USERID = "userid";
 
+    public static final String API_HEALTH_CHECK = "api.health.check";
+    public static final String HEALTHY = "healthy";
+    public static final String CHECKS = "checks";
+    public static final String CASSANDRA_DB = "Cassandra Service";
+    public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
+
+    // Redis
+    public static final String REDIS_CACHE = "Redis cache";
+    public static final String POSTGRES_DB = "Postgres Service";
+    public static final String NAME = "name";
+    public static final String REDIS_PONG_RESPONSE = "PONG";
+    public static final String ELASTIC_SEARCH = "Elastic search Service";
+    public static final String KAFKA = "Kafka Service";
+
     private Constants() {
     }
 }

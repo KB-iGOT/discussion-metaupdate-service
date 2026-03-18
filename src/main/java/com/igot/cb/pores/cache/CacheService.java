@@ -103,4 +103,12 @@ public class CacheService {
       log.error("Error while putting data in Redis cache: {}, {} ", key, e.getMessage());
     }
   }
+  public boolean isRedisHealthy() {
+    try (Jedis jedis = jedisPool.getResource()) {
+      return Constants.REDIS_PONG_RESPONSE.equalsIgnoreCase(jedis.ping());
+    } catch (Exception e) {
+      log.error("Redis health check failed", e);
+      return false;
+    }
+  }
 }
