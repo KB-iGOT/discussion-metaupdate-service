@@ -1,7 +1,5 @@
 package com.igot.cb.kafka.config;
 
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,9 +13,6 @@ import org.springframework.kafka.listener.ConcurrentMessageListenerContainer;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.TimeUnit;
-
 @Configuration
 public class ConsumerConfiguration {
     @Value("${spring.kafka.bootstrap.servers}")
@@ -34,12 +29,6 @@ public class ConsumerConfiguration {
 
     @Value("${kafka.auto.commit.interval.ms}")
     private Integer kafkaAutoCommitInterval;
-
-    private final AdminClient adminClient;
-
-    public ConsumerConfiguration(AdminClient adminClient) {
-        this.adminClient = adminClient;
-    }
 
     @Bean
     KafkaListenerContainerFactory<ConcurrentMessageListenerContainer<String, String>> kafkaListenerContainerFactory() {
@@ -71,14 +60,5 @@ public class ConsumerConfiguration {
         propsMap.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG, kafkaMaxPollInterval);
         propsMap.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, kafkaMaxPollRecords);
         return propsMap;
-    }
-
-    public boolean isKafkaHealthy() {
-        try {
-            adminClient.listTopics().names().get(3, TimeUnit.SECONDS);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
     }
 }

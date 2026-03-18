@@ -10,8 +10,7 @@ import com.igot.cb.pores.util.Constants;
 import com.igot.cb.pores.util.ProjectUtil;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import jakarta.persistence.EntityManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,9 +37,6 @@ public class HealthServiceImpl implements HealthService {
     @Autowired
     EsUtilService esClientService;
 
-    @Autowired
-    ConsumerConfiguration kafkaHealthCheckService;
-
     private Logger log = LoggerFactory.getLogger(getClass().getName());
 
     @Override
@@ -56,7 +52,6 @@ public class HealthServiceImpl implements HealthService {
             redisHealthStatus(response);
             postgresHealthStatus(response);
             elasticsearchHealthStatus(response);
-            kafkaHealthStatus(response);
         } catch (Exception e) {
             log.error("Failed to process health check. Exception: ", e);
             response.getParams().setStatus(Constants.FAILED);
@@ -145,31 +140,6 @@ public class HealthServiceImpl implements HealthService {
                 setErrorDetails(response, new Exception("Elasticsearch is unhealthy"));
             }
         }catch (Exception e) {
-            isHealthy = false;
-            setErrorDetails(response, e);
-        }
-
-        response.put(Constants.HEALTHY, isHealthy);
-        result.put(Constants.HEALTHY, isHealthy);
-        ((List<Map<String, Object>>) response.get(Constants.CHECKS)).add(result);
-    }
-
-
-    private void kafkaHealthStatus(ApiResponse response) {
-
-        Map<String, Object> result = new HashMap<>();
-        result.put(Constants.NAME, Constants.KAFKA);
-
-        boolean isHealthy = true;
-
-        try {
-            isHealthy = kafkaHealthCheckService.isKafkaHealthy();
-
-            if (!isHealthy) {
-                setErrorDetails(response, new Exception("Kafka is unhealthy"));
-            }
-
-        } catch (Exception e) {
             isHealthy = false;
             setErrorDetails(response, e);
         }
