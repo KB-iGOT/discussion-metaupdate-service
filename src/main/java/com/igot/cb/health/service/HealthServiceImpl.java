@@ -1,16 +1,16 @@
 package com.igot.cb.health.service;
 
 
-import com.igot.cb.kafka.config.ConsumerConfiguration;
 import com.igot.cb.pores.cache.CacheService;
 import com.igot.cb.pores.elasticsearch.service.EsUtilService;
-import com.igot.cb.pores.util.ApiRespParam;
+import com.igot.cb.pores.exceptions.CustomException;
 import com.igot.cb.pores.util.ApiResponse;
 import com.igot.cb.pores.util.Constants;
 import com.igot.cb.pores.util.ProjectUtil;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import jakarta.persistence.EntityManager;
-import org.slf4j.Logger;import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -42,18 +42,25 @@ public class HealthServiceImpl implements HealthService {
     @Override
     public ApiResponse checkHealthStatus(String requestId) throws Exception {
         ApiResponse response = ProjectUtil.createDefaultResponse(Constants.API_HEALTH_CHECK);
+        Map<String, Object> responseObj = new HashMap<>();
         response.getParams().setMsgId(requestId);
         response.getParams().setResMsgId(requestId);
         try {
-            response.put(Constants.HEALTHY, true);
+
             List<Map<String, Object>> healthResults = new ArrayList<>();
-            response.put(Constants.CHECKS, healthResults);
-            cassandraHealthStatus(response);
-            redisHealthStatus(response);
-            postgresHealthStatus(response);
-            elasticsearchHealthStatus(response);
+            cassandraHealthStatus(healthResults);
+            redisHealthStatus(healthResults);
+            postgresHealthStatus(healthResults);
+            elasticsearchHealthStatus(healthResults);
+
+            responseObj.put(Constants.CHECKS, healthResults);
+            responseObj.put(Constants.NAME,Constants.ALL_HEALTH_CHECK);
+            responseObj.put(Constants.HEALTHY, Constants.TRUE);
+            response.put(Constants.RESPONSE, responseObj);
+
         } catch (Exception e) {
             log.error("Failed to process health check. Exception: ", e);
+            response.put(Constants.HEALTHY, false);
             response.getParams().setStatus(Constants.FAILED);
             response.getParams().setErr(e.getMessage());
             response.setResponseCode(HttpStatus.INTERNAL_SERVER_ERROR);
@@ -61,101 +68,89 @@ public class HealthServiceImpl implements HealthService {
         return response;
     }
 
-    public void cassandraHealthStatus(ApiResponse response) throws Exception {
-        Map<String, Object> result = new HashMap<>();
-        result.put(Constants.NAME, Constants.CASSANDRA_DB);
-        Boolean res = true;
-
+    public void cassandraHealthStatus(List<Map<String, Object>> response) throws Exception {
+        Map<String, Object> result = ProjectUtil.createDefaultMapResponse(Constants.CASSANDRA_DB, null, null);
         try {
             List<Map<String, Object>> cassandraQueryResponse = cassandraOperation.getRecordsByPropertiesByKey(
-                    Constants.KEYSPACE_SUNBIRD, Constants.TABLE_SYSTEM_SETTINGS, null,null,null);
+                    Constants.KEYSPACE_SUNBIRD, Constants.TABLE_SYSTEM_SETTINGS, null, null, null);
             if (cassandraQueryResponse.isEmpty()) {
-                res = false;
-                setErrorDetails(response, new Exception("Cassandra is unhealthy"));
+                setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", "Cassandra query returned empty result",
+                        HttpStatus.SERVICE_UNAVAILABLE));
+                /*result.put(Constants.HEALTHY, Constants.FALSE);
+                result.put(Constants.ERR, Constants.CASSANDRA_DB +" Down");
+                result.put(Constants.ERROR_MESSAGE, "Cassandra query returned empty result");*/
             }
         } catch (Exception e) {
-            res = false;
-            setErrorDetails(response, e);
+            setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR));
         }
-        response.put(Constants.HEALTHY, res);
-        result.put(Constants.HEALTHY, res);
-        ((List<Map<String, Object>>) response.get(Constants.CHECKS)).add(result);
+        response.add(result);
     }
 
-    private void redisHealthStatus(ApiResponse response) {
+    private void redisHealthStatus(List<Map<String, Object>> response) {
 
-        Map<String, Object> result = new HashMap<>();
-        result.put(Constants.NAME, Constants.REDIS_CACHE);
-
+        Map<String, Object> result = ProjectUtil.createDefaultMapResponse(Constants.REDIS_CACHE,null,null);
         boolean isHealthy = true;
 
         try{
             isHealthy = redisCacheService.isRedisHealthy();
 
             if (!isHealthy) {
-                setErrorDetails(response, new Exception("Redis is unhealthy"));
+                setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", "Redis is unhealthy",
+                        HttpStatus.SERVICE_UNAVAILABLE));
+                /*result.put(Constants.HEALTHY, Constants.FALSE);
+                result.put(Constants.ERR, Constants.REDIS_CACHE +" Down");
+                result.put(Constants.ERROR_MESSAGE, "Redis is unhealthy");*/
             }
         }catch (Exception e) {
-            isHealthy = false;
-            setErrorDetails(response, e);
+            setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR));
         }
 
-        response.put(Constants.HEALTHY, isHealthy);
-        result.put(Constants.HEALTHY, isHealthy);
-        ((List<Map<String, Object>>) response.get(Constants.CHECKS)).add(result);
+       response.add(result);
 
 
     }
 
     @Transactional(readOnly = true)
-    public void postgresHealthStatus(ApiResponse response) {
-        Map<String, Object> result = new HashMap<>();
-        result.put(Constants.NAME, Constants.POSTGRES_DB);
-        Boolean res = true;
+    public void postgresHealthStatus(List<Map<String, Object>> response) {
+        Map<String, Object> result = ProjectUtil.createDefaultMapResponse(Constants.POSTGRES_DB,null,null);
         try {
             entityManager.createNativeQuery("SELECT 1").getSingleResult();
-
         } catch (Exception e) {
-            res = false;
-            setErrorDetails(response, new Exception("Postgres is unhealthy"));
+            setErrorDetails( result, new CustomException(Constants.POSTGRES_DB +" Down", e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR));
         }
-
-        response.put(Constants.HEALTHY, res);
-        result.put(Constants.HEALTHY, res);
-        ((List<Map<String, Object>>) response.get(Constants.CHECKS)).add(result);
+        response.add(result);
 
     }
 
 
-    private void elasticsearchHealthStatus(ApiResponse response) {
+    private void elasticsearchHealthStatus(List<Map<String, Object>> response) {
 
-        Map<String, Object> result = new HashMap<>();
-        result.put(Constants.NAME, Constants.ELASTIC_SEARCH);
+        Map<String, Object> result = ProjectUtil.createDefaultMapResponse(Constants.ELASTIC_SEARCH,null,null);
         boolean isHealthy = true;
         try {
             isHealthy = esClientService.isElasticsearchHealthy();
 
             if (!isHealthy) {
-                response.put(Constants.HEALTHY, false);
-                setErrorDetails(response, new Exception("Elasticsearch is unhealthy"));
-            }
-        }catch (Exception e) {
-            isHealthy = false;
-            setErrorDetails(response, e);
-        }
 
-        response.put(Constants.HEALTHY, isHealthy);
-        result.put(Constants.HEALTHY, isHealthy);
-        ((List<Map<String, Object>>) response.get(Constants.CHECKS)).add(result);
+                setErrorDetails( result, new CustomException(Constants.ELASTIC_SEARCH +" Down", "Elasticsearch service is unhealthy",
+                        HttpStatus.SERVICE_UNAVAILABLE));
+            }
+
+        }catch (Exception e) {
+            setErrorDetails( result, new CustomException(Constants.ELASTIC_SEARCH +" Down", e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+        response.add(result);
     }
     
-    private void setErrorDetails(ApiResponse response, Exception e) {
+    private void setErrorDetails(Map<String, Object> response, CustomException e) {
 
-        ApiRespParam params = response.getParams();
-        params.setStatus(Constants.FAILED);
-        params.setErr(e.getMessage());
-        params.setErrMsg(e.getLocalizedMessage());
-        response.setParams(params);
+        response.put(Constants.HEALTHY,Constants.FALSE);
+        response.put(Constants.ERR, e.getHttpStatusCode());
+        response.put(Constants.ERROR_MESSAGE, e.getMessage());
     }
 
 }

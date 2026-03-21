@@ -1,5 +1,7 @@
 package com.igot.cb.pores.util;
 
+import jnr.ffi.Struct;
+
 public class Constants {
 
     public static final String KEYSPACE_SUNBIRD = "sunbird";
@@ -20,6 +22,7 @@ public class Constants {
     public static final String SUCCESS = "success";
     public static final String FAILED = "Failed";
     public static final String ERROR_MESSAGE = "errmsg";
+    public static final String ERR = "err";
     public static final String INDEX_TYPE = "_doc";
     public static final String REDIS_KEY_PREFIX = "community_";
     public static final String KEYWORD = ".keyword";
@@ -83,6 +86,7 @@ public class Constants {
     public static final String CHECKS = "checks";
     public static final String CASSANDRA_DB = "Cassandra Service";
     public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
+    public static final String RESULT = "result";
 
     // Redis
     public static final String REDIS_CACHE = "Redis cache";
@@ -91,6 +95,9 @@ public class Constants {
     public static final String REDIS_PONG_RESPONSE = "PONG";
     public static final String ELASTIC_SEARCH = "Elastic search Service";
     public static final String KAFKA = "Kafka Service";
+    public static final Boolean FALSE = false;
+    public static final Boolean TRUE = true;
+    public static final String ALL_HEALTH_CHECK = "Complete health check api";
 
     private Constants() {
     }

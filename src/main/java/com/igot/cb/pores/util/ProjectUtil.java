@@ -3,6 +3,8 @@ package com.igot.cb.pores.util;
 import org.joda.time.DateTime;
 import org.springframework.http.HttpStatus;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class ProjectUtil {
@@ -18,4 +20,12 @@ public class ProjectUtil {
         return response;
     }
 
+    public static Map<String, Object> createDefaultMapResponse(String api, String err, String errMsg) {
+        Map<String, Object> response = new HashMap<>();
+        response.put(Constants.HEALTHY, Constants.TRUE);
+        response.put(Constants.NAME, api);
+        response.put(Constants.ERR, err != null ? err : "");
+        response.put(Constants.ERROR_MESSAGE, errMsg != null ? errMsg : "");
+        return response;
+    }
 }
