@@ -94,10 +94,11 @@ public class Constants {
     public static final String NAME = "name";
     public static final String REDIS_PONG_RESPONSE = "PONG";
     public static final String ELASTIC_SEARCH = "Elastic search Service";
-    public static final String KAFKA = "Kafka Service";
     public static final Boolean FALSE = false;
     public static final Boolean TRUE = true;
     public static final String ALL_HEALTH_CHECK = "Complete health check api";
+    public static final String KAFKA_SERVICE = "Kafka Service";
+
 
     private Constants() {
     }

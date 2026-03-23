@@ -9,6 +9,8 @@ import com.igot.cb.pores.util.Constants;
 import com.igot.cb.pores.util.ProjectUtil;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import jakarta.persistence.EntityManager;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Service
 public class HealthServiceImpl implements HealthService {
@@ -37,7 +40,11 @@ public class HealthServiceImpl implements HealthService {
     @Autowired
     EsUtilService esClientService;
 
+    @Autowired
+    AdminClient adminClient;
+
     private Logger log = LoggerFactory.getLogger(getClass().getName());
+
 
     @Override
     public ApiResponse checkHealthStatus(String requestId) throws Exception {
@@ -52,6 +59,7 @@ public class HealthServiceImpl implements HealthService {
             redisHealthStatus(healthResults);
             postgresHealthStatus(healthResults);
             elasticsearchHealthStatus(healthResults);
+            kafkaHealthStatus(healthResults);
 
             responseObj.put(Constants.CHECKS, healthResults);
             responseObj.put(Constants.NAME,Constants.ALL_HEALTH_CHECK);
@@ -76,9 +84,6 @@ public class HealthServiceImpl implements HealthService {
             if (cassandraQueryResponse.isEmpty()) {
                 setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", "Cassandra query returned empty result",
                         HttpStatus.SERVICE_UNAVAILABLE));
-                /*result.put(Constants.HEALTHY, Constants.FALSE);
-                result.put(Constants.ERR, Constants.CASSANDRA_DB +" Down");
-                result.put(Constants.ERROR_MESSAGE, "Cassandra query returned empty result");*/
             }
         } catch (Exception e) {
             setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", e.getMessage(),
@@ -96,14 +101,11 @@ public class HealthServiceImpl implements HealthService {
             isHealthy = redisCacheService.isRedisHealthy();
 
             if (!isHealthy) {
-                setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", "Redis is unhealthy",
+                setErrorDetails( result, new CustomException(Constants.REDIS_CACHE +" Down", "Redis is unhealthy",
                         HttpStatus.SERVICE_UNAVAILABLE));
-                /*result.put(Constants.HEALTHY, Constants.FALSE);
-                result.put(Constants.ERR, Constants.REDIS_CACHE +" Down");
-                result.put(Constants.ERROR_MESSAGE, "Redis is unhealthy");*/
             }
         }catch (Exception e) {
-            setErrorDetails( result, new CustomException(Constants.CASSANDRA_DB +" Down", e.getMessage(),
+            setErrorDetails( result, new CustomException(Constants.REDIS_CACHE +" Down", e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR));
         }
 
@@ -145,13 +147,27 @@ public class HealthServiceImpl implements HealthService {
         }
         response.add(result);
     }
-    
+
+    private void kafkaHealthStatus(List<Map<String, Object>> response) {
+        Map<String, Object> result = ProjectUtil.createDefaultMapResponse(Constants.KAFKA_SERVICE,null,null);
+        try {
+            DescribeClusterResult clusterResult = adminClient.describeCluster();
+            clusterResult.nodes().get(3, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            setErrorDetails( result, new CustomException(Constants.KAFKA_SERVICE +" Down", e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR));
+        }
+        response.add(result);
+    }
+
     private void setErrorDetails(Map<String, Object> response, CustomException e) {
 
         response.put(Constants.HEALTHY,Constants.FALSE);
-        response.put(Constants.ERR, e.getHttpStatusCode());
-        response.put(Constants.ERROR_MESSAGE, e.getMessage());
+        response.put(Constants.ERR, e.getHttpStatusCode().value());
+        response.put(Constants.ERROR_MESSAGE, e.getMessage()!=null ? e.getMessage() : e.getHttpStatusCode().getReasonPhrase());
     }
+
+
 
 }
 

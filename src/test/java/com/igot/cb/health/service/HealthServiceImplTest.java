@@ -2,25 +2,33 @@ package com.igot.cb.health.service;
 
 import com.igot.cb.pores.cache.CacheService;
 import com.igot.cb.pores.elasticsearch.service.EsUtilService;
-import com.igot.cb.pores.util.*;
+import com.igot.cb.pores.util.ApiResponse;
+import com.igot.cb.pores.util.Constants;
 import com.igot.cb.transactional.cassandrautils.CassandraOperation;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
+import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.DescribeClusterResult;
+import org.apache.kafka.common.KafkaFuture;
+import org.apache.kafka.common.Node;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class HealthServiceImplTest {
 
-    @Mock CassandraOperation cassandraOperation;
+    @Mock  CassandraOperation cassandraOperation;
     @Mock CacheService redisCacheService;
     @Mock EntityManager entityManager;
     @Mock Query query;
@@ -28,7 +36,18 @@ class HealthServiceImplTest {
     private final String REQUEST_ID = "test-request--123";
     @InjectMocks HealthServiceImpl service;
     @Mock
-            ApiResponse response;
+    ApiResponse response;
+
+    @Mock
+    AdminClient adminClient;
+
+    @Mock
+    DescribeClusterResult describeClusterResult;
+
+    @Mock
+    KafkaFuture<Collection<Node>> kafkaFutureNodes;
+
+
 
     // 🔹 Common mocks
     void mockAllHealthy() throws Exception {
@@ -64,7 +83,7 @@ class HealthServiceImplTest {
         List<Map<String, Object>> checks =
                 (List<Map<String, Object>>) result.get(Constants.CHECKS);
 
-        assertEquals(4, checks.size());
+        assertEquals(5, checks.size());
     }
 
     // ❌ FAILURE CASE (Redis down)
@@ -140,12 +159,6 @@ class HealthServiceImplTest {
         List<Map<String, Object>> checks =
                 (List<Map<String, Object>>) result.get(Constants.CHECKS);
 
-        // ✅ verify Cassandra marked unhealthy
-   /*     boolean cassandraFailed = checks.stream()
-                .anyMatch(c ->
-                        Constants.CASSANDRA_DB.equals(c.get(Constants.NAME)) && Boolean.FALSE.equals(c.get(Constants.HEALTHY))
-                );
-*/
         boolean cassandraFailed = false;
         for (Map<String, Object> c : checks) {
             System.out.println(c); // debug
@@ -154,12 +167,58 @@ class HealthServiceImplTest {
                 cassandraFailed = true;
                 break;
             }
-        }        /*.filter(c -> Constants.CASSANDRA_DB.equals(c.get(Constants.NAME)) &&
-                        Boolean.FALSE.equals(c.get(Constants.HEALTHY)))
-                .findFirst()
-                .isPresent();*/
+        }
         System.out.println(checks);
 
         assertTrue(cassandraFailed);
     }
+
+    @Test
+    void shouldReturnTrue_whenKafkaUp() throws Exception{
+        when(adminClient.describeCluster()).thenReturn(describeClusterResult);
+        when(describeClusterResult.nodes()).thenReturn(kafkaFutureNodes);
+        when(kafkaFutureNodes.get(3,TimeUnit.SECONDS)).thenReturn(Collections.emptyList());
+
+        List<Map<String, Object>> responseList = new ArrayList<>();
+
+        ApiResponse response = service.checkHealthStatus("req-empty");
+
+        assertNotNull(response);
+        Map<String, Object> result = (Map<String, Object>) response.getResult().get(Constants.RESPONSE);
+        List<Map<String, Object>> checks = (List<Map<String, Object>>) result.get(Constants.CHECKS);
+
+        assertNotNull(checks);
+
+        checks.stream().filter(c -> Constants.KAFKA_SERVICE.equals(c.get(Constants.NAME)))
+                .findFirst()
+                .ifPresent(kafkaCheck -> {
+                    assertEquals(Constants.TRUE, kafkaCheck.get(Constants.HEALTHY));
+                });
+        }
+
+    @Test
+    void shouldReturnTrue_whenKafkaDown() throws Exception{
+        when(adminClient.describeCluster()).thenReturn(describeClusterResult);
+        when(describeClusterResult.nodes()).thenReturn(kafkaFutureNodes);
+        when(kafkaFutureNodes.get(3,TimeUnit.SECONDS)).thenThrow(new RuntimeException("Kafka connection failed"));
+
+        List<Map<String, Object>> responseList = new ArrayList<>();
+
+        ApiResponse response = service.checkHealthStatus("req-empty");
+
+        assertNotNull(response);
+        Map<String, Object> result = (Map<String, Object>) response.getResult().get(Constants.RESPONSE);
+        List<Map<String, Object>> checks = (List<Map<String, Object>>) result.get(Constants.CHECKS);
+
+        assertNotNull(checks);
+
+        checks.stream().filter(c -> Constants.KAFKA_SERVICE.equals(c.get(Constants.NAME)))
+                .findFirst()
+                .ifPresent(kafkaCheck -> {
+                    assertEquals(500, kafkaCheck.get(Constants.ERR));
+                });
+    }
+
+
+
 }
