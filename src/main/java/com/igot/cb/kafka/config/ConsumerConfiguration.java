@@ -1,6 +1,7 @@
 package com.igot.cb.kafka.config;
 
 import org.apache.kafka.clients.admin.AdminClient;
+import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -64,9 +65,9 @@ public class ConsumerConfiguration {
     }
 
     @Bean
-    public AdminClient adminClient(String kafkabootstrapAddress) {
+    public AdminClient adminClient() {
         Map<String, Object> config = new HashMap<>();
-        config.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkabootstrapAddress);
+        config.put(AdminClientConfig.BOOTSTRAP_SERVERS_CONFIG, kafkabootstrapAddress);
         return AdminClient.create(config);
     }
 }
