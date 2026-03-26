@@ -2,9 +2,12 @@ package com.igot.cb.pores.elasticsearch.service;
 
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.HealthStatus;
 import co.elastic.clients.elasticsearch._types.Result;
 import co.elastic.clients.elasticsearch._types.ShardStatistics;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.elasticsearch.cluster.ElasticsearchClusterClient;
+import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import co.elastic.clients.elasticsearch.core.*;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
@@ -60,6 +63,12 @@ class EsUtilServiceImplTest {
 
     @Mock
     private Query query;
+
+    @Mock
+    private HealthResponse healthResponse;
+
+    @Mock
+    private ElasticsearchClusterClient clusterClient;
 
     @BeforeEach
     void setUp() {
@@ -447,6 +456,50 @@ class EsUtilServiceImplTest {
 
         // Verify delete called
         verify(elasticsearchClient).delete(any(DeleteRequest.class));
+    }
+
+    @Test
+    void isElasticsearchHealthy_HealthyStatus() throws Exception {
+        // Arrange
+        when(healthResponse.status()).thenReturn(HealthStatus.Green);
+
+        when(elasticsearchClient.cluster()).thenReturn(clusterClient);
+        when(clusterClient.health()).thenReturn(healthResponse);
+        // Act
+        boolean result = esUtilService.isElasticsearchHealthy();
+
+        // Assert
+        assertTrue(result);
+        verify(elasticsearchClient.cluster(), times(1)).health();
+    }
+
+    @Test
+    void isElasticsearchHealthy_UnhealthyStatus() throws Exception {
+        // Arrange
+        when(healthResponse.status()).thenReturn(HealthStatus.Red);
+        when(elasticsearchClient.cluster()).thenReturn(clusterClient);
+        when(clusterClient.health()).thenReturn(healthResponse);
+
+        // Act
+        boolean result = esUtilService.isElasticsearchHealthy();
+
+        // Assert
+        assertFalse(result);
+        verify(elasticsearchClient.cluster(), times(1)).health();
+    }
+
+    @Test
+    void isElasticsearchHealthy_Exception() throws Exception {
+        when(elasticsearchClient.cluster()).thenReturn(clusterClient);
+        // Arrange
+        when(elasticsearchClient.cluster().health()).thenThrow(new IOException("Connection failed"));
+
+        // Act
+        boolean result = esUtilService.isElasticsearchHealthy();
+
+        // Assert
+        assertFalse(result);
+        verify(elasticsearchClient.cluster(), times(1)).health();
     }
 
 

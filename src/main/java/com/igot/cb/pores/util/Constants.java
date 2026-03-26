@@ -1,5 +1,7 @@
 package com.igot.cb.pores.util;
 
+import jnr.ffi.Struct;
+
 public class Constants {
 
     public static final String KEYSPACE_SUNBIRD = "sunbird";
@@ -20,6 +22,7 @@ public class Constants {
     public static final String SUCCESS = "success";
     public static final String FAILED = "Failed";
     public static final String ERROR_MESSAGE = "errmsg";
+    public static final String ERR = "err";
     public static final String INDEX_TYPE = "_doc";
     public static final String REDIS_KEY_PREFIX = "community_";
     public static final String KEYWORD = ".keyword";
@@ -77,6 +80,25 @@ public class Constants {
     public static final String COUNT_OF_PEOPLE_LIKED = "countOfPeopleLiked";
     public static final String API_VERSION_1 = "1.0";
     public static final String USERID = "userid";
+
+    public static final String API_HEALTH_CHECK = "api.health.check";
+    public static final String HEALTHY = "healthy";
+    public static final String CHECKS = "checks";
+    public static final String CASSANDRA_DB = "Cassandra Service";
+    public static final String TABLE_SYSTEM_SETTINGS = "system_settings";
+    public static final String RESULT = "result";
+
+    // Redis
+    public static final String REDIS_CACHE = "Redis cache";
+    public static final String POSTGRES_DB = "Postgres Service";
+    public static final String NAME = "name";
+    public static final String REDIS_PONG_RESPONSE = "PONG";
+    public static final String ELASTIC_SEARCH = "Elastic search Service";
+    public static final Boolean FALSE = false;
+    public static final Boolean TRUE = true;
+    public static final String ALL_HEALTH_CHECK = "Complete health check api";
+    public static final String KAFKA_SERVICE = "Kafka Service";
+
 
     private Constants() {
     }
